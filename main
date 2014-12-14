@@ -1,0 +1,283 @@
+Z3_vkrhlanko
+============
+#include <ctime>
+#include <cstdlib>
+#include <string.h>
+#include "red_polje.h"
+//#include "red_pokazivac.h"
+
+using namespace std;
+
+tosoba polje[10000];
+int broj_osoba=0;
+queue *Q=new queue;
+
+
+
+
+void ispis(){
+	cout<<"\nPrioritet - ci           | Usluga - di\n"; 
+	cout<<"\n1 - VIP klijenti         | 1 - predaja/preuzimanje posiljke";
+	cout<<"\n2 - invalidi             | 2 - placanje racuna";
+	cout<<"\n3 - trudnice             | 3 - uplata lutrije";
+	cout<<"\n4 - umirovljenici        | 4 - Western Union ";
+	cout<<"\n5 - ostali klijenti      | 5 - Evotv\n";
+}
+
+void generiraj(){
+	cout<<"Unesite N: ";
+	cin>>broj_osoba;
+	for(int i=0;i<broj_osoba;i++){
+		polje[i].ai=10+rand()%491;					
+		polje[i].bi=80+rand()%721;
+		polje[i].ci=1+rand()%5; 	
+		polje[i].di=1+rand()%5;	
+					}
+}
+
+
+
+tosoba generiranje_osobe(tosoba &x,int ni){
+																					
+	if(rand()%2==1) x.spol='z';
+		else x.spol='m';
+	if ((x.spol=='m') && (x.ci=3)){ //provjera za trudnice btw,treba i dati za penzionere provjeru hahahahah!!!!!
+		int pom=rand()%4+1;
+		if (pom=1) x.ci=1;
+		if (pom=2) x.ci=2;
+		if(pom=3) x.ci=4;
+		if (pom=4) x.ci=5;
+	}
+
+	x.ime[0]='\0'; x.prezime[0]='\0';
+	char pom[5];
+    
+    strcat(x.ime,"ime_");
+    itoa(ni+1,pom,10);
+    strcat(x.ime,pom);
+    strcat(x.prezime,"prezime_");
+    strcat(x.prezime,pom);
+    
+    x.datum.dan=rand()%31+1;                //to treba urediti ak stignem
+	x.datum.mjesec=rand()%12+1;
+	x.datum.godina=1934+rand()%65;         // starost: 16-80 tu treba za umirovljenike još dati ogranicenje
+ 
+    return x;
+}
+
+bool ispis_jaraca(tosoba x){
+ if((((x.datum.mjesec==12 )&&(x.datum.dan>19)) || ((x.datum.mjesec==1)&&(x.datum.dan<23))) && (x.datum.godina>1974) && (x.di==3)) return 1;
+    else return 0;
+	
+}
+
+void ispis_reda(queue *Q){
+tosoba pom;
+for(int i=0;i<broj_osoba;i++){
+	pom=FrontQ(Q);
+	cout<<"-----------------\nIme: "<<pom.ime<<"\nPrezime: "<<pom.prezime<<"\nSpol: "<<pom.spol;
+	cout<<"\nDatum: "<<pom.datum.dan<<"."<<pom.datum.mjesec<<"."<<pom.datum.godina;
+	cout<<"\nai: "<<pom.ai<<"\nbi: "<<pom.bi<<"\nci: "<<pom.ci<<"\ndi: "<<pom.di<<endl;
+
+	DeQueueQ(Q);
+    EnQueueQ(pom,Q);	
+}
+}
+
+void unos_osoba(){
+ if (broj_osoba==0){
+	cout<<"Niste generirali niz cetvorki!"<<endl;
+	}	
+else{
+ for(int i=0;i<broj_osoba;i++)
+ generiranje_osobe(polje[i],i);
+ tosoba pom;
+	
+	for(int i=0;i<broj_osoba;i++){
+	 bool zamjena=false;
+	 for(int j=0; j<i ;j++){
+	   pom=FrontQ(Q);
+	   if (polje[i].ci<pom.ci && !zamjena){
+	   		EnQueueQ(polje[i],Q); 
+	   		zamjena=true;
+		}
+	   DeQueueQ(Q);
+	   EnQueueQ(pom,Q);
+	   }
+	   if(!zamjena) EnQueueQ(polje[i],Q);
+	   
+  }//for
+
+ 
+for(int i=0;i<broj_osoba;i++){
+	pom=FrontQ(Q);
+	if (ispis_jaraca(pom)){
+		cout<<"-----------------\nIme: "<<pom.ime<<"\nPrezime: "<<pom.prezime<<"\nSpol: "<<pom.spol;
+		cout<<"\nDatum: "<<pom.datum.dan<<"."<<pom.datum.mjesec<<"."<<pom.datum.godina;
+		cout<<"\nai: "<<pom.ai<<"\nbi: "<<pom.bi<<"\nci: "<<pom.ci<<"\ndi: "<<pom.di<<endl;
+	}
+	DeQueueQ(Q);
+    EnQueueQ(pom,Q);
+}//for
+}//else
+}
+
+void brisanje_trudnica(){
+	int broj=broj_osoba,pombroj;
+	tosoba pom;
+	for (int i=0;i<broj_osoba;i++){
+		pom=FrontQ(Q);
+		if((pom.ci==3) && (pom.di==5)) {
+		    broj--;
+			DeQueueQ(Q);			    
+		}
+		else{		
+			DeQueueQ(Q);
+			EnQueueQ(pom,Q);
+		}
+	}
+	
+	pombroj=broj_osoba;
+	broj_osoba=broj;
+	ispis_reda(Q);
+	cout<<"Prije brisanja: "<<pombroj<<"\nNakon brisanja: "<<broj;			
+}
+
+void rekurzija(queue *Q, queue *brzi){
+	
+	if(IsEmptyQ(Q))return;
+	tosoba pom=FrontQ(Q);
+	EnQueueQ(pom,brzi);		    
+	DeQueueQ(Q);	
+	rekurzija(Q,brzi);
+}
+
+void salter_brzih_usluga(){    //umirovljenici ci=4
+  queue *brzi=new queue;
+  InitQ(brzi); 
+  queue *preostalo=new queue;
+  InitQ(preostalo); 
+  queue *pomocni=new queue;
+  tosoba pom;
+  for(int i=0;i<broj_osoba;i++){
+  	pom=FrontQ(Q);
+  	EnQueueQ(pom,pomocni);
+  	DeQueueQ(Q);
+  	EnQueueQ(pom,Q);
+  	
+  }
+  rekurzija(Q,brzi);	
+	int c1=0,c2=0,c4=0,c5=0,brojac_brzi=0;
+	brzi=Q;Q=pomocni;
+	for(int i=0;i<broj_osoba;i++){
+		pom=FrontQ(Q);
+		bool upisan=false;
+		if(pom.ci==3) {
+			EnQueueQ(pom,brzi);
+			brojac_brzi++;
+			upisan=true;
+		}
+		if((pom.ci==1 && c1<2) || (pom.ci==2 && c2<2) || (pom.ci==4 && c4<2) || (pom.ci==5 && c5<2)){
+				EnQueueQ(pom,brzi);
+				switch(pom.ci){
+					case 1: c1++; break;
+					case 2: c2++;break;
+					case 4: c4++;break;
+					case 5: c5++;break;
+				}
+				brojac_brzi++;
+				upisan=true;
+			}
+		if(!upisan) EnQueueQ(pom,preostalo);
+		DeQueueQ(Q);
+		EnQueueQ(pom,Q);
+	}
+	
+
+/*for(int i=0;i<brojac_brzi;i++){
+    pom=FrontQ(brzi);
+	cout<<"-----------------\nIme: "<<pom.ime<<"\nPrezime: "<<pom.prezime<<"\nSpol: "<<pom.spol;
+	cout<<"\nDatum: "<<pom.datum.dan<<"."<<pom.datum.mjesec<<"."<<pom.datum.godina;
+	cout<<"\nai: "<<pom.ai<<"\nbi: "<<pom.bi<<"\nci: "<<pom.ci<<"\ndi: "<<pom.di<<endl;
+	DeQueueQ(brzi);
+	EnQueueQ(pom,brzi);
+
+}*/
+for(int i=0;i<brojac_brzi;i++){
+	pom=FrontQ(brzi);
+	polje[i]=pom;
+	DeQueueQ(brzi);
+	EnQueueQ(pom,brzi);
+}
+
+cout<<endl<<"NAKON::::::::"<<endl;
+int poc3=0; bool prvi_nadjen=0;
+	for(int i=0;i<brojac_brzi;i++){
+	 bool zamjena=false;
+	 if(polje[i].ci!=3 && polje[i].ci==polje[i+1].ci && polje[i].di<polje[i+1].di){
+	 	pom=polje[i];
+	 	polje[i]=polje[i+1];
+	 	polje[i+1]=pom;
+	 	
+	 }
+	 if(!prvi_nadjen && poc3==0) poc3=i;
+	 if(prvi_nadjen && polje[i].ci==3 )
+	 		for(int j=poc3;j<i;j++){
+	 			int zamjena=0;
+	 			 if(polje[j].di<polje[i].di){
+	 				pom=polje[i];
+	 				polje[i]=polje[j];
+	 				polje[j]=pom;
+	 				zamjena=1;
+	 			
+				 }	
+				 if (zamjena) i--;
+	 		}
+
+
+}
+cout<<"Šalter brzih usluga:"<<endl;
+for(int i=0;i<brojac_brzi;i++){
+   pom=polje[i];
+	cout<<"-----------------\nIme: "<<pom.ime<<"\nPrezime: "<<pom.prezime<<"\nSpol: "<<pom.spol;
+	cout<<"\nDatum: "<<pom.datum.dan<<"."<<pom.datum.mjesec<<"."<<pom.datum.godina;
+	cout<<"\nai: "<<pom.ai<<"\nbi: "<<pom.bi<<"\nci: "<<pom.ci<<"\ndi: "<<pom.di<<endl;
+}
+system("Pause");
+while(!IsEmptyQ(pomocni)){
+	pom=FrontQ(pomocni);
+	cout<<"-----------------\nIme: "<<pom.ime<<"\nPrezime: "<<pom.prezime<<"\nSpol: "<<pom.spol;
+	cout<<"\nDatum: "<<pom.datum.dan<<"."<<pom.datum.mjesec<<"."<<pom.datum.godina;
+	cout<<"\nai: "<<pom.ai<<"\nbi: "<<pom.bi<<"\nci: "<<pom.ci<<"\ndi: "<<pom.di<<endl;
+	DeQueueQ(pomocni);
+}
+
+}//fja
+
+
+int main(){
+	srand(time(0));
+	rand();
+	InitQ(Q);
+	int izbor;
+	ispis();
+	do{
+		
+		cout<<"\nIZBORNIK\n-------------------\n1.Generirati niz od N cetvorki\n2.Dodati zapise o osobama i ispisati sve 'jarce' mlade od 40 godina\n3.Odlazak trudnica koje zanima Evotv \n4.Salter brzih usluga\n9.Izlaz"<<endl;
+		cin>>izbor;
+		switch (izbor){
+			case 1: generiraj();			       
+					break;
+			case 2: unos_osoba();
+				   break;
+			case 3: brisanje_trudnica();
+					break;
+			case 4: salter_brzih_usluga();
+					break;
+		}
+		
+		
+	}while(izbor!=9);
+
+return 0;
+}
